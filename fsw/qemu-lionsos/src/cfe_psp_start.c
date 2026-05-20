@@ -4,6 +4,8 @@
 #include "target_config.h"
 #include "osapi-common.h"
 #include "osapi-error.h"
+#include "cfe_psp_memory.h"
+#include "cfe_psp_module.h"
 
 #define CFE_PSP_MAIN_FUNCTION       (*GLOBAL_CONFIGDATA.CfeConfig->SystemMain)
 #define CFE_PSP_1HZ_FUNCTION        (*GLOBAL_CONFIGDATA.CfeConfig->System1HzISR)
@@ -14,24 +16,20 @@
 
 void OS_Application_Startup(void)
 {
-    uint32 reset_type;
-    uint32 reset_subtype;
-    int32 status;
-
-    reset_type = 0;
-    reset_subtype = 0;
-
-    status = OS_API_Init();
+    uint32 reset_type = CFE_PSP_RST_TYPE_POWERON;
+    uint32 reset_subtype = CFE_PSP_RST_SUBTYPE_UNDEFINED_RESET;
+    int32 status = OS_API_Init();
 
     if (status != OS_SUCCESS)
     {
-        /* Irrecoverable error if OS_API_Init() fails */
-        /* Use microkit primitives here as OS_printf may not work */
-        microkit_dbg_puts("OS_Application_Startup():OS_API_Init failure, status code ");
-        microkit_dbg_put32(status);
-        microkit_dbg_putc('\n');
-        seL4_DebugHalt();
+        /* Unrecoverable error if OS_API_Init() fails */
+        /* Use primitives here as OS_printf may not work */
+        printf("CFE_PSP: OS_API_Init() failure\n");
+        CFE_PSP_Panic(status);
     }
 
+    CFE_PSP_SetupReservedMemoryMap();
+    CFE_PSP_ModuleInit();
+    CFE_PSP_InitProcessorReservedMemory(reset_type);
     CFE_PSP_MAIN_FUNCTION(reset_type, reset_subtype, 1, CFE_PSP_NONVOL_STARTUP_FILE);
 }
