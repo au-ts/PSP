@@ -18,7 +18,9 @@ void OS_Application_Startup(void)
 {
     uint32 reset_type = CFE_PSP_RST_TYPE_POWERON;
     uint32 reset_subtype = CFE_PSP_RST_SUBTYPE_UNDEFINED_RESET;
-    int32 status = OS_API_Init();
+    int32 status;
+
+    status = OS_API_Init();
 
     if (status != OS_SUCCESS)
     {
@@ -26,6 +28,14 @@ void OS_Application_Startup(void)
         /* Use primitives here as OS_printf may not work */
         printf("CFE_PSP: OS_API_Init() failure\n");
         CFE_PSP_Panic(status);
+    }
+
+    osal_id_t fs;
+    status = OS_FileSysAddFixedMap(&fs, "/cf", "/cf");
+
+    if (status != OS_SUCCESS)
+    {
+        OS_printf("CFE_PSP: OS_FileSysAddFixedMap() failure: %d\n", status);
     }
 
     CFE_PSP_SetupReservedMemoryMap();
